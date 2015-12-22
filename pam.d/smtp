@@ -1,0 +1,8 @@
+#
+# /etc/pam.d/smtp - specify PAM SMTP behavior
+#
+
+@include common-auth
+@include common-account
+@include common-password
+@include common-session
