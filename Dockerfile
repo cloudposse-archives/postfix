@@ -28,12 +28,7 @@ RUN echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/02apt-speedup && \
 # Inspired by: 
 #    http://uname.pingveno.net/blog/index.php/post/2014/02/01/Configure-Postfix-as-STMP-standalone-single-domain-server-using-Unix-users-and-PAM-on-Debian
 
-ADD start /start 
-ADD rsyslogd.conf /etc/rsyslog.d/stdout.conf
-ADD master.cf /etc/postfix/
-ADD pam.d/ /etc/pam.d/
-ADD saslauthd /etc/default/saslauthd
-ADD smtpd.conf /etc/postfix/sasl/smtpd.conf 
+ADD rootfs /
 
 # Test with:  testsaslauthd -u postmaster -p password -f /var/spool/postfix/var/run/saslauthd/mux
 # perl -MMIME::Base64 -e 'print encode_base64("\000postmaster\000password")'  
