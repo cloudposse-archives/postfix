@@ -457,7 +457,7 @@ pid=$!
 
 /etc/init.d/saslauthd start
 /etc/init.d/rsyslog start
-
+echo "postmaster:$POSTMASTER_PASS" | chpasswd
 # Loop "wait" until the postfix master exits
 while wait $pid; test $? -gt 128
 do
