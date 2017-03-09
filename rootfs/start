@@ -1,5 +1,6 @@
 #!/bin/sh
 
+SASL_PASSWD=/etc/postfix/sasl_passwd
 
 # Parse options
 if [ -n "$MAILNAME" ]
@@ -27,6 +28,28 @@ trust_lla=0
 if [ -n "$RELAYHOST" ]
 then
 		relayhost="$RELAYHOST"
+fi
+
+if [ -n "$RELAY_AUTH_ENABLED" ]
+then
+		relay_auth_enabled=true
+else
+		relay_auth_enabled=false
+fi
+
+if [ -n "$RELAY_AUTH_DOMAIN" ]
+then
+		relay_auth_domain="$RELAY_AUTH_DOMAIN"
+fi
+
+if [ -n "$RELAY_AUTH_USER" ]
+then
+		relay_auth_user="$RELAY_AUTH_USER"
+fi
+
+if [ -n "$RELAY_AUTH_PASS" ]
+then
+		relay_auth_pass="$RELAY_AUTH_PASS"
 fi
 
 if [ -n "$TRUST" ]
@@ -110,6 +133,10 @@ Default: --trust-local --trust-connected-rfc1918
 --skip-trust-*             Use with local, connected-rfc1918, connected, rfc1918, or lla to skip trusting it
 --skip-all                 Disable/reset all trusts
 --relayhost                Sets the relay host
+--relay_auth_enabled       Set relay authenticate enabled
+--relay_auth_domain        Set relay authenticate domain
+--relay_auth_user          Set relay authenticate user
+--relay_auth_pass          Set relay authenticate password
 EOF
             exit 1
             ;;
@@ -125,6 +152,36 @@ EOF
             if [ -n "$2" ]
             then
                 relayhost="$2"
+            fi
+						;;
+
+        (--relay_auth_enabled)
+            if [ "$2" -eq "false" ] || [ "$2" -eq "0" ]
+            then
+                relay_auth_enabled=false
+            else
+                relay_auth_enabled=true
+            fi
+						;;
+
+        (--relay_auth_domain)
+            if [ -n "$2" ]
+            then
+                relay_auth_domain="$2"
+            fi
+						;;
+
+        (--relay_auth_user)
+            if [ -n "$2" ]
+            then
+                relay_auth_user="$2"
+            fi
+						;;
+
+        (--relay_auth_pass)
+            if [ -n "$2" ]
+            then
+                relay_auth_pass="$2"
             fi
 						;;
 
@@ -341,14 +398,32 @@ fi
 # Update the hostname
 if [ -n "$mailname" ]
 then
-    sed -i "s#myhostname =.*#myhostname = $mailname#" /etc/postfix/main.cf
+    postconf -e "myhostname = $mailname"
 fi
 
-
 seded_mynetworks=`echo $MYNETWORK | sed 's/#/\\#/g'`
-sed -i -r "s#mynetworks = (.*)#mynetworks = $mynetworks#g" /etc/postfix/main.cf
 
-sed -i -r "s#relayhost = (.*)#relayhost = $relayhost#g" /etc/postfix/main.cf
+postconf -e "mynetworks = $mynetworks"
+
+if [ -n $relayhost ]
+then
+  postconf -e "relayhost = $relayhost"
+fi
+
+if [ $relay_auth_enabled -eq true ]
+then
+  postconf -e 'smtp_sasl_auth_enable = yes'
+  postconf -e 'smtp_sasl_security_options = noanonymous'
+  postconf -e 'smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd'
+
+  if [ -n $relay_auth_domain ] && [ -n $relay_auth_user ] && [ -n $relay_auth_pass ]
+  then
+    echo "$relay_auth_domain $relay_auth_user:$relay_auth_pass" > $SASL_PASSWD
+    chmod 600 $SASL_PASSWD
+  fi
+
+  postmap   $SASL_PASSWD
+fi
 
 # Utilize the init script to configure the chroot (if needed)
 /etc/init.d/postfix start > /dev/null
