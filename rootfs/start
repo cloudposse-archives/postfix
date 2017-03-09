@@ -405,18 +405,18 @@ seded_mynetworks=`echo $MYNETWORK | sed 's/#/\\#/g'`
 
 postconf -e "mynetworks = $mynetworks"
 
-if [ -n $relayhost ]
+if [ -n "$relayhost" ]
 then
   postconf -e "relayhost = $relayhost"
 fi
 
-if [ $relay_auth_enabled -eq true ]
+if [ -n "$relay_auth_enabled" ]
 then
   postconf -e 'smtp_sasl_auth_enable = yes'
   postconf -e 'smtp_sasl_security_options = noanonymous'
   postconf -e 'smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd'
 
-  if [ -n $relay_auth_domain ] && [ -n $relay_auth_user ] && [ -n $relay_auth_pass ]
+  if [ -n "$relay_auth_domain" ] && [ -n "$relay_auth_user" ] && [ -n "$relay_auth_pass" ]
   then
     echo "$relay_auth_domain $relay_auth_user:$relay_auth_pass" > $SASL_PASSWD
     chmod 600 $SASL_PASSWD
