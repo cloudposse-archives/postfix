@@ -52,6 +52,14 @@ then
 		relay_auth_pass="$RELAY_AUTH_PASS"
 fi
 
+if [ -n "$RELAY_AUTH_TLS" ]
+then
+		relay_auth_tls=true
+else
+		relay_auth_tls=false
+fi
+
+
 if [ -n "$TRUST" ]
 then
     trust_connected_rfc1918=0
@@ -133,10 +141,11 @@ Default: --trust-local --trust-connected-rfc1918
 --skip-trust-*             Use with local, connected-rfc1918, connected, rfc1918, or lla to skip trusting it
 --skip-all                 Disable/reset all trusts
 --relayhost                Sets the relay host
---relay_auth_enabled       Set relay authenticate enabled
---relay_auth_domain        Set relay authenticate domain
---relay_auth_user          Set relay authenticate user
---relay_auth_pass          Set relay authenticate password
+--relay-auth-enabled       Set relay authenticate enabled
+--relay-auth-domain        Set relay authenticate domain
+--relay-auth-tls           Set relay authenticate using tls
+--relay-auth-user          Set relay authenticate user
+--relay-auth-pass          Set relay authenticate password
 EOF
             exit 1
             ;;
@@ -155,7 +164,7 @@ EOF
             fi
 						;;
 
-        (--relay_auth_enabled)
+        (--relay-auth-enabled)
             if [ "$2" -eq "false" ] || [ "$2" -eq "0" ]
             then
                 relay_auth_enabled=false
@@ -164,21 +173,30 @@ EOF
             fi
 						;;
 
-        (--relay_auth_domain)
+        (--relay-auth-tls)
+            if [ "$2" -eq "false" ] || [ "$2" -eq "0" ]
+            then
+                relay_auth_tls=false
+            else
+                relay_auth_tls=true
+            fi
+						;;
+
+        (--relay-auth-domain)
             if [ -n "$2" ]
             then
                 relay_auth_domain="$2"
             fi
 						;;
 
-        (--relay_auth_user)
+        (--relay-auth-user)
             if [ -n "$2" ]
             then
                 relay_auth_user="$2"
             fi
 						;;
 
-        (--relay_auth_pass)
+        (--relay-auth-pass)
             if [ -n "$2" ]
             then
                 relay_auth_pass="$2"
@@ -415,6 +433,16 @@ then
   postconf -e 'smtp_sasl_auth_enable = yes'
   postconf -e 'smtp_sasl_security_options = noanonymous'
   postconf -e 'smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd'
+
+  if [ -n "$relay_auth_tls" ]
+  then
+    postconf -e 'smtp_use_tls = yes'
+    postconf -e 'smtp_sasl_tls_security_options = noanonymous'
+    postconf -e 'smtp_tls_security_level = may'
+    postconf -e 'smtp_tls_note_starttls_offer = yes'
+  else
+    postconf -e 'smtp_use_tls = may'
+  fi
 
   if [ -n "$relay_auth_domain" ] && [ -n "$relay_auth_user" ] && [ -n "$relay_auth_pass" ]
   then
