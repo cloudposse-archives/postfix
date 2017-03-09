@@ -1,4 +1,4 @@
-# postfix
+# postfix [![Travis](https://img.shields.io/travis/cloudposse/postfix.svg)]()
 
 This is project implements as a docker container a postfix mail server. It supports a configurable hostname, trusted hosts, proper
 shutdown handling and mail relay (e.g. to mailgun).
