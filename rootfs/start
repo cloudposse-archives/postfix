@@ -141,11 +141,11 @@ Default: --trust-local --trust-connected-rfc1918
 --skip-trust-*             Use with local, connected-rfc1918, connected, rfc1918, or lla to skip trusting it
 --skip-all                 Disable/reset all trusts
 --relayhost                Sets the relay host
---relay-auth-enabled       Set relay authenticate enabled
---relay-auth-domain        Set relay authenticate domain
---relay-auth-tls           Set relay authenticate using tls
---relay-auth-user          Set relay authenticate user
---relay-auth-pass          Set relay authenticate password
+--relay-auth-enabled       Set relay authentication enabled
+--relay-auth-domain        Set relay authentication domain
+--relay-auth-tls           Set relay authentication using TLS
+--relay-auth-user          Set relay authentication user
+--relay-auth-pass          Set relay authentication password
 EOF
             exit 1
             ;;
