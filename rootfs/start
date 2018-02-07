@@ -254,10 +254,6 @@ EOF
             trust_rfc1918=1
             ;;
 
-        (--trust-rfc1918)
-            trust_lla=1
-            ;;
-
         (--skip-trust-rfc6598)
             trust_rfc6598=0
             ;;
