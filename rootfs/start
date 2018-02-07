@@ -270,7 +270,11 @@ EOF
             trust_lla=1
             ;;
 
+        # This isn't documented anywhere.  Adding the documented version of this that does not exist.
         (--exclude-ula)
+            trust_lla=0
+            ;;
+        (--skip-trust-lla)
             trust_lla=0
             ;;
 
