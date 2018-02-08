@@ -22,6 +22,7 @@ verbose=0
 trust_local=1
 trust_connected=0
 trust_rfc1918=0
+trust_rfc6598=0
 trust_connected_rfc1918=1
 trust_lla=0
 
@@ -69,6 +70,9 @@ then
     elif [ "$TRUST" = "rfc1918" ]
     then
         trust_rfc1918=1
+    elif [ "$TRUST" = "rfc6598" ]
+    then
+        trust_rfc6598=1
     elif [ "$TRUST" = "connected" ]
     then
         trust_connected=1
@@ -114,6 +118,11 @@ then
     trust_connected_rfc1918=1
 fi
 
+if [ "$TRUST_RFC6598" = "1" ]
+then
+    trust_rfc6598=1
+fi
+
 if [ "$TRUST_LLA" = "1" ]
 then
     trust_lla=1
@@ -134,11 +143,12 @@ Default: --trust-local --trust-connected-rfc1918
 --trust-connected-rfc1918  Trust all locally connected rfc1918 subnets
 --trust-connected          Trust all addresses connected (excluding IPv6 local-link addresses)
 --trust-rfc1918            Trust all rfc1918 address
+--trust-rfc6598            Trust all rfc6598 address (does not include rfc1918 addresses)
 --trust-lla                Trust the fe80::/64 IPv6 subnet
 --trust [subnet]           Trust the specified subnet (IPv4 and IPv6 supported)
 --trust [interface]        Trust all network address on the interface (excluding IPv6 lla)
 
---skip-trust-*             Use with local, connected-rfc1918, connected, rfc1918, or lla to skip trusting it
+--skip-trust-*             Use with local, connected-rfc1918, connected, rfc1918, rfc6598, or lla to skip trusting it
 --skip-all                 Disable/reset all trusts
 --relayhost                Sets the relay host
 --relay-auth-enabled       Set relay authentication enabled
@@ -207,6 +217,7 @@ EOF
             trust_local=0
             trust_connected=0
             trust_rfc1918=0
+            trust_rfc6598=0
             trust_connected_rfc1918=0
             trust_lla=0
             ;;
@@ -243,15 +254,23 @@ EOF
             trust_rfc1918=1
             ;;
 
-        (--trust-rfc1918)
-            trust_lla=1
+        (--skip-trust-rfc6598)
+            trust_rfc6598=0
+            ;;
+
+        (--trust-rfc6598)
+            trust_rfc6598=1
             ;;
 
         (--trust-lla)
             trust_lla=1
             ;;
 
+        # This isn't documented anywhere.  Adding the documented version of this that does not exist.
         (--exclude-ula)
+            trust_lla=0
+            ;;
+        (--skip-trust-lla)
             trust_lla=0
             ;;
 
@@ -299,6 +318,10 @@ exclude_rfc1918() {
     rfc1918_addresses="$rfc1918_addresses|"'172\.(1[6-9]|2[0-9]|31)\.(25[1-4]|2[1-4][0-9]|1[0-9]{2}|[1-9]?[0-9])'
     awk "!/inet ($rfc1918_addresses)/"
 }
+exclude_rfc6598() {
+    rfc6598_addresses='100\.64(\.(2[0-9]{2}|1?[0-9]{1,2})){2}'
+    awk "!/inet ($rfc6598_addresses)/"
+}
 exclude_lla() {
     awk '!/inet6 fe80::/'
 }
@@ -325,9 +348,15 @@ do
         fi
     else
         # $address is an interface
-        if [ $trust_rfc1918 -eq 1 ]
+        if [ $trust_rfc1918 -eq 1 -a $trust_rfc6598 -eq 1 ]
+        then
+            addresses4=`ip addr show dev $address | exclude_rfc1918 | exclude_rfc6598 | awk '/inet / { print $2 }' | get_v4_network`
+        elif [ $trust_rfc1918 -eq 1 ]
         then
             addresses4=`ip addr show dev $address | exclude_rfc1918 | awk '/inet / { print $2 }' | get_v4_network`
+        elif [ $trust_rfc6598 -eq 1 ]
+        then
+            addresses4=`ip addr show dev $address | exclude_rfc6598 | awk '/inet / { print $2 }' | get_v4_network`
         else
             addresses4=`ip addr show dev $address | awk '/inet / { print $2 }' | get_v4_network`
         fi
@@ -352,6 +381,12 @@ include_rfc1918() {
     awk "/inet ($rfc1918_addresses)/"
 }
 
+include_rfc6598() {
+    rfc6598_addresses='100\.64(\.(2[0-9]{2}|1?[0-9]{1,2})){2}'
+    awk "/inet ($rfc6598_addresses)/"
+}
+
+
 if [ $trust_local -eq 1 ]
 then
     local4_addresses=`ip addr show dev lo | awk '/inet /  {print $2 }' | get_v4_network`
@@ -365,6 +400,11 @@ then
     trusted4="${trusted4}10.0.0.0/8 172.16.0.0/12 192.168.0.0/24 "
 fi
 
+if [ $trust_rfc6598 -eq 1 ]
+then
+    trusted4="${trusted4}100.64.0.0/16 "
+fi
+
 if [ $trust_lla -eq 1 ]
 then
     trusted6="${trusted6}fe80::/64 "
@@ -372,9 +412,15 @@ fi
 
 if [ $trust_connected -eq 1 ]
 then
-    if [ $trust_rfc1918 -eq 1 ]
+    if [ $trust_rfc1918 -eq 1 -a $trust_rfc6598 -eq 1 ]
+    then
+        connected4=`ip addr show | exclude_local | exclude_rfc1918 | exclude_rfc6598 | awk '/inet / { print $2 }' | get_v4_network`
+    elif [ $trust_rfc1918 -eq 1 ]
     then
         connected4=`ip addr show | exclude_local | exclude_rfc1918 | awk '/inet / { print $2 }' | get_v4_network`
+    elif [ $trust_rfc6598 -eq 1 ]
+    then
+        connected4=`ip addr show | exclude_local | exclude_rfc6598 | awk '/inet / { print $2 }' | get_v4_network`
     else
         connected4=`ip addr show | exclude_local | awk '/inet / { print $2 }' | get_v4_network`
     fi
