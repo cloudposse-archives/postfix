@@ -44,3 +44,14 @@ arguments.
 |                                                         | --skip-all                                                                                             | Disable/reset all trusts. Disabled by default                                            |
 
 
+# Development
+
+## Units tests
+
+Regexp unit tests can be executed by running
+
+`cd ./rootfs/`
+
+`./test_ip_regexps`
+
+Any output should be fixed.
