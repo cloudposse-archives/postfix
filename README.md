@@ -8,7 +8,7 @@ shutdown handling and mail relay (e.g. to mailgun).
 By default, connected rfc1918 networks are detected and allowed. Local networks 
 (127.0.0.1, ::1) are also allowed.
 
-You can optionally enable the Carrier Grade NAT, RFC6598.  
+You can optionally enable the Carrier Grade NAT, RFC6598 (100.64.0.0/10).  
 RFC1918 is still the default.  RFC6598 does not include the RFC1918 subnets, because
 CGN is not meant to be used at the same time as private subnets.  If you really want 
 both, you'll need to override the entrypoint to include both arguments.
