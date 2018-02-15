@@ -116,24 +116,16 @@ export invalid_all="
 "
 
 
+. ./functions
+
 
 # I'm not testing the lla's yet
 # This format is function_name:number_of_lines
-for func_lines in include_rfc1918:5 include_rfc6598:4
+for func in include_rfc1918 include_rfc6598
  do
-  func=$(echo "${func_lines}" | cut -d":" -f1)
-  lines=$(echo "${func_lines}" | cut -d":" -f2)
   data=$(echo "${func}" | cut -d"_" -f2)
 
-  # Extract the function from ./start, and pull it in to this script
-  # Syntax errors in ./func.sh generally means the line count is wrong
-  egrep -A${lines} "${func}[(][)]" ./start > func.sh
-  #echo "$func:"
-  #cat ./func.sh
-  #echo
-  . ./func.sh
-  rm ./func.sh
-
+  # Use the data specific to the function we're testing
   # sh doesn't like double interpolation
   valid_data_var="valid_${data}"
   invalid_data_var="invalid_${data}"
@@ -160,21 +152,11 @@ for func_lines in include_rfc1918:5 include_rfc6598:4
 done
 
 
-for func_lines in exclude_local:2 exclude_rfc1918:5 exclude_rfc6598:3
+for func in exclude_local exclude_rfc1918 exclude_rfc6598
  do
-  func=$(echo "${func_lines}" | cut -d":" -f1)
-  lines=$(echo "${func_lines}" | cut -d":" -f2)
   data=$(echo "${func}" | cut -d"_" -f2)
 
-  # Extract the function from ./start, and pull it in to this script
-  # Syntax errors in ./func.sh generally means the line count is wrong
-  egrep -A${lines} "${func}[(][)]" ./start > func.sh
-  #echo "$func:"
-  #cat ./func.sh
-  #echo
-  . ./func.sh
-  rm ./func.sh
-
+  # Use the data specific to the function we're testing
   # sh doesn't like double interpolation
   valid_data_var="valid_${data}"
   invalid_data_var="invalid_${data}"
