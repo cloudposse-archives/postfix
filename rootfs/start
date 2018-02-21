@@ -299,32 +299,7 @@ done
 trusted4=""
 trusted6=""
 
-get_v4_network() {
-    xargs --no-run-if-empty sipcalc | awk '/Network address/ { printf "%s/", $4 } /Network mask \(bits\)/ { print $5 }'
-}
-get_v6_network() {
-    xargs --no-run-if-empty sipcalc | awk '/Subnet prefix/ { print $5 }'
-}
-get_compact_v6_network() {
-    get_v6_network | xargs --no-run-if-empty xargs sipcalc | awk '/Compressed address/ { printf "%s/", $4 } /Prefix length/ { print $4 }'
-}
-
-exclude_local() {
-    awk '!/inet 127.0.0.1/ && !/inet6 ::1/'
-}
-exclude_rfc1918() {
-    rfc1918_addresses='10(\.(2[0-9]{2}|1?[0-9]{1,2})){3}'
-    rfc1918_addresses="$rfc1918_addresses|"'192\.168\.[12]?[0-9]{1,2}'
-    rfc1918_addresses="$rfc1918_addresses|"'172\.(1[6-9]|2[0-9]|31)\.(25[1-4]|2[1-4][0-9]|1[0-9]{2}|[1-9]?[0-9])'
-    awk "!/inet ($rfc1918_addresses)/"
-}
-exclude_rfc6598() {
-    rfc6598_addresses='100\.64(\.(2[0-9]{2}|1?[0-9]{1,2})){2}'
-    awk "!/inet ($rfc6598_addresses)/"
-}
-exclude_lla() {
-    awk '!/inet6 fe80::/'
-}
+. ./functions
 
 for address in $trusted;
 do
@@ -374,19 +349,6 @@ then
     exit 1
 fi
 
-include_rfc1918() {
-    rfc1918_addresses='10(\.(2[0-9]{2}|1?[0-9]{1,2})){3}'
-    rfc1918_addresses="$rfc1918_addresses|"'192\.168\.[12]?[0-9]{1,2}'
-    rfc1918_addresses="$rfc1918_addresses|"'172\.(1[6-9]|2[0-9]|31)\.(25[1-4]|2[1-4][0-9]|1[0-9]{2}|[1-9]?[0-9])'
-    awk "/inet ($rfc1918_addresses)/"
-}
-
-include_rfc6598() {
-    rfc6598_addresses='100\.64(\.(2[0-9]{2}|1?[0-9]{1,2})){2}'
-    awk "/inet ($rfc6598_addresses)/"
-}
-
-
 if [ $trust_local -eq 1 ]
 then
     local4_addresses=`ip addr show dev lo | awk '/inet /  {print $2 }' | get_v4_network`
@@ -402,7 +364,7 @@ fi
 
 if [ $trust_rfc6598 -eq 1 ]
 then
-    trusted4="${trusted4}100.64.0.0/16 "
+    trusted4="${trusted4}100.64.0.0/10 "
 fi
 
 if [ $trust_lla -eq 1 ]

@@ -1,0 +1,183 @@
+#!/bin/sh
+
+export valid_local="
+127.0.0.1
+"
+
+# RFC1918 is
+#   10.0.0.0/8 -> 10.0.0.0 to 10.255.255.255
+#   172.16.0.0/12 -> 172.16.0.0 to 172.31.255.255
+#   192.168.0.0/16 -> 192.168.0.0 to 192.168.255.255
+export valid_rfc1918="
+10.0.0.0
+10.0.0.10
+10.0.0.100
+10.0.0.199
+10.0.0.200
+10.0.0.255
+10.0.10.0
+10.0.100.0
+10.0.199.0
+10.0.200.0
+10.0.255.0
+10.10.0.0
+10.100.0.0
+10.199.0.0
+10.200.0.0
+10.255.0.0
+10.255.255.255
+172.16.0.0
+172.19.0.0
+172.20.0.0
+172.29.0.0
+172.30.0.0
+172.31.0.0
+172.31.255.255
+192.168.0.0
+192.168.255.255
+"
+
+export valid_rfc6598="
+100.64.0.0
+100.64.0.9
+100.64.0.10
+100.64.0.19
+100.64.0.25
+100.64.0.26
+100.64.0.99
+100.64.0.100
+100.64.0.199
+100.64.0.200
+100.64.0.255
+100.64.9.0
+100.64.10.0
+100.64.19.0
+100.64.25.0
+100.64.26.0
+100.64.99.0
+100.64.100.0
+100.64.199.0
+100.64.200.0
+100.64.255.0
+100.65.0.0
+100.69.0.0
+100.70.0.0
+100.99.0.0
+100.100.0.0
+100.119.0.0
+100.120.0.0
+100.127.0.0
+"
+
+export invalid_local="
+0.0.0.0
+128.0.0.0
+10.0.0.0
+192.168.0.0
+172.16.0.0
+"
+
+export invalid_rfc1918="
+0.0.0.0
+9.255.255.255
+11.0.0.0
+172.15.255.255
+172.32.0.0
+192.167.255.255
+192.169.0.0
+191.255.255.255
+193.0.0.0
+100.64.0.0
+"
+
+export invalid_rfc6598="
+0.0.0.0
+10.0.0.0
+192.168.0.0
+172.16.0.0
+100.63.255.255
+100.128.0.0
+"
+
+export invalid_all="
+256.256.256.256
+999.999.999.999
+10.0.0.256
+10.0.256.0
+10.256.0.0
+172.16.0.256
+172.16.256.0
+192.168.0.256
+192.168.256.0
+100.64.0.256
+100.64.256.0
+100.127.0.256
+100.127.256.0
+"
+
+
+. ./functions
+
+
+# I'm not testing the lla's yet
+# This format is function_name:number_of_lines
+for func in include_rfc1918 include_rfc6598
+ do
+  data=$(echo "${func}" | cut -d"_" -f2)
+
+  # Use the data specific to the function we're testing
+  # sh doesn't like double interpolation
+  valid_data_var="valid_${data}"
+  invalid_data_var="invalid_${data}"
+  eval "valid_data=\"\${$valid_data_var}\""
+  eval "invalid_data=\"\${$invalid_data_var}\""
+
+  # Make sure valid data passed through
+  for input in ${valid_data}
+   do
+    if ! echo "inet ${input}" | ${func} | grep "${input}" > /dev/null
+     then
+      echo "$func failed to allow ${input}"
+    fi
+  done
+
+  # Make sure invalid data does not pass through
+  for input in ${invalid_data} ${invalid_all}
+   do
+    if echo "inet ${input}" | ${func} | grep "${input}" > /dev/null
+     then
+      echo "$func mistakenly allowed ${input}"
+    fi
+  done
+done
+
+
+for func in exclude_local exclude_rfc1918 exclude_rfc6598
+ do
+  data=$(echo "${func}" | cut -d"_" -f2)
+
+  # Use the data specific to the function we're testing
+  # sh doesn't like double interpolation
+  valid_data_var="valid_${data}"
+  invalid_data_var="invalid_${data}"
+  eval "valid_data=\"\${$valid_data_var}\""
+  eval "invalid_data=\"\${$invalid_data_var}\""
+
+  # Make sure invalid data passed through
+  for input in ${invalid_data} ${invalid_all}
+   do
+    if ! echo "inet ${input}" | ${func} | grep "${input}" > /dev/null
+     then
+      echo "$func mistakenly excluded ${input}"
+    fi
+  done
+
+  # Make sure valid data does not pass through
+  for input in ${valid_data}
+   do
+    if echo "inet ${input}" | ${func} | grep "${input}" > /dev/null
+     then
+      echo "$func failed to exclude ${input}"
+    fi
+  done
+done
